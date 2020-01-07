@@ -234,13 +234,52 @@ partial order but not a total order.
 Give an example of a preorder that is not a partial order.
 
 ```
--- Your code goes here
+data _×_ (A B : Set) : Set where
+  _,_ : A → B → A × B
+
+infixl 9 _×_
+
+_ : ℕ × ℕ
+_ = (2 , 3)
+
+infix 3 _≤₁_
+
+-- a preorder example
+data _≤₁_ : ℕ × ℕ → ℕ × ℕ → Set where
+
+  z≤₁s-L : ∀ {m n p : ℕ}
+      ---------------------
+    → (zero , m) ≤₁ (n , p)
+
+  z≤₁s-R : ∀ {m n p : ℕ}
+      ---------------------
+    → (m , zero) ≤₁ (n , p)
+  
+  s≤₁s : ∀ {m n p q : ℕ}
+    → (m , n) ≤₁ (p , q)
+      ----------------------------------
+    → (suc m , suc n) ≤₁ (suc p , suc q)
 ```
 
 Give an example of a partial order that is not a total order.
 
 ```
--- Your code goes here
+-- a partial order example
+data _≤₂_ : ℕ × ℕ → ℕ × ℕ → Set where
+
+  z≤₂s : ∀ {m n : ℕ}
+      ------------------------
+    → (zero , zero) ≤₂ (m , n)
+
+  s≤₂s-L : ∀ {m n p q : ℕ}
+    → (m , n) ≤₂ (p , q)
+      --------------------------
+    → (suc m , n) ≤₂ (suc p , q)
+  
+  s≤₂s-R : ∀ {m n p q : ℕ}
+    → (m , n) ≤₂ (p , q)
+      --------------------------
+    → (m , suc n) ≤₂ (p , suc q)
 ```
 
 ## Reflexivity
@@ -253,7 +292,7 @@ as that will make it easier to invoke reflexivity:
 ≤-refl : ∀ {n : ℕ}
     -----
   → n ≤ n
-≤-refl {zero} = z≤n
+≤-refl {zero}  = z≤n
 ≤-refl {suc n} = s≤s ≤-refl
 ```
 The proof is a straightforward induction on the implicit argument `n`.
@@ -276,8 +315,8 @@ hold, then `m ≤ p` holds.  Again, `m`, `n`, and `p` are implicit:
   → n ≤ p
     -----
   → m ≤ p
-≤-trans z≤n       _          =  z≤n
-≤-trans (s≤s m≤n) (s≤s n≤p)  =  s≤s (≤-trans m≤n n≤p)
+≤-trans z≤n       _         = z≤n
+≤-trans (s≤s m≤n) (s≤s n≤p) = s≤s (≤-trans m≤n n≤p)
 ```
 Here the proof is by induction on the _evidence_ that `m ≤ n`.  In the
 base case, the first inequality holds by `z≤n` and must show `zero ≤
@@ -353,7 +392,9 @@ The above proof omits cases where one argument is `z≤n` and one
 argument is `s≤s`.  Why is it ok to omit them?
 
 ```
--- Your code goes here
+-- Both these cases imply that suc n ≤ zero. This case cannot arise,
+-- however, as we can never construct a value of that type. So Agda
+-- determines that there is no possible evidence that suc n ≤ zero.
 ```
 
 
@@ -543,7 +584,35 @@ transitivity proves `m + p ≤ n + q`, as was to be shown.
 Show that multiplication is monotonic with regard to inequality.
 
 ```
--- Your code goes here
+open import Data.Nat using (_*_)
+open import Data.Nat.Properties using (*-comm)
+
+*-monoʳ-≤ : ∀ (n p q : ℕ)
+  → p ≤ q
+    -------------
+  → n * p ≤ n * q
+*-monoʳ-≤ zero p q p≤q = z≤n
+*-monoʳ-≤ (suc n) p q p≤q = +-mono-≤ p q (n * p) (n * q) p≤q np≤nq
+  where
+    np≤nq = *-monoʳ-≤ n p q p≤q
+
+*-monoˡ-≤ : ∀ (m n p : ℕ)
+  → m ≤ n
+    -------------
+  → m * p ≤ n * p
+*-monoˡ-≤ m n p m≤n rewrite
+    *-comm m p
+  | *-comm n p = *-monoʳ-≤ p m n m≤n
+
+*-mono-≤ : ∀ (m n p q : ℕ)
+  → m ≤ n
+  → p ≤ q
+    -------------
+  → m * p ≤ n * q
+*-mono-≤ m n p q m≤n p≤q = ≤-trans mp≤np np≤nq
+  where
+    mp≤np = *-monoˡ-≤ m n p m≤n
+    np≤nq = *-monoʳ-≤ n p q p≤q
 ```
 
 
@@ -590,7 +659,13 @@ exploiting the corresponding properties of inequality.
 Show that strict inequality is transitive.
 
 ```
--- Your code goes here
+<-trans : ∀ {m n p : ℕ}
+  → m < n
+  → n < p
+    -----
+  → m < p
+<-trans z<s       (s<s n<p) = z<s
+<-trans (s<s m<n) (s<s n<p) = s<s (<-trans m<n n<p)
 ```
 
 #### Exercise `trichotomy` (practice) {#trichotomy}
@@ -608,7 +683,31 @@ similar to that used for totality.
 [negation]({{ site.baseurl }}/Negation/).)
 
 ```
--- Your code goes here
+data Trichotomy (m n : ℕ) : Set where
+
+  <-forward :
+      m < n
+      ---------
+    → Trichotomy m n
+
+  eq :
+      m ≡ n
+      ---------
+    → Trichotomy m n
+
+  <-flipped :
+      n < m
+      ---------
+    → Trichotomy m n
+
+<-trichotomy : ∀ (m n) → Trichotomy m n
+<-trichotomy zero    zero    = eq refl
+<-trichotomy (suc m) zero    = <-flipped z<s
+<-trichotomy zero    (suc n) = <-forward z<s
+<-trichotomy (suc m) (suc n) with <-trichotomy m n
+...                             | <-forward m<n = <-forward (s<s m<n)
+...                             | eq        m≡n = eq (cong suc m≡n)
+...                             | <-flipped n<m = <-flipped (s<s n<m)
 ```
 
 #### Exercise `+-mono-<` (practice) {#plus-mono-less}
@@ -617,15 +716,50 @@ Show that addition is monotonic with respect to strict inequality.
 As with inequality, some additional definitions may be required.
 
 ```
--- Your code goes here
-```
++-monoʳ-< : ∀ (n p q : ℕ)
+  → p < q
+    -------------
+  → n + p < n + q
++-monoʳ-< zero p q p<q = p<q
++-monoʳ-< (suc n) p q p<q = s<s (+-monoʳ-< n p q p<q)
+
++-monoˡ-< : ∀ (m n p : ℕ)
+  → m < n
+      -------------
+  → m + p < n + p
++-monoˡ-< m n p m<n rewrite
+    +-comm m p
+  | +-comm n p = +-monoʳ-< p m n m<n
+
++-mono-< : ∀ (m n p q : ℕ)
+  → m < n
+  → p < q
+    -------------
+  → m + p < n + q
++-mono-< m n p q m<n p<q = <-trans m+p<n+p n+p<n+q
+  where
+    m+p<n+p = +-monoˡ-< m n p m<n
+    n+p<n+q = +-monoʳ-< n p q p<q
+  ```
 
 #### Exercise `≤-iff-<` (recommended) {#leq-iff-less}
 
 Show that `suc m ≤ n` implies `m < n`, and conversely.
 
 ```
--- Your code goes here
+<-if-≤ : ∀ {m n : ℕ}
+  → suc m ≤ n
+    ---------
+  → m < n
+<-if-≤ {zero}  {suc _} _         = z<s
+<-if-≤ {suc _} {suc _} (s≤s m≤n) = s<s (<-if-≤ m≤n)
+
+≤-if-< : ∀ {m n : ℕ}
+  → m < n
+    ---------
+  → suc m ≤ n
+≤-if-< {zero}  {suc _} _         = s≤s z≤n
+≤-if-< {suc _} {suc _} (s<s m<n) = s≤s (≤-if-< m<n)
 ```
 
 #### Exercise `<-trans-revisited` (practice) {#less-trans-revisited}
@@ -635,7 +769,23 @@ using the relation between strict inequality and inequality and
 the fact that inequality is transitive.
 
 ```
--- Your code goes here
+open Eq using (sym)
+open import Data.Nat.Properties using (+-identityʳ; +-suc)
+
+≤-suc : ∀ (n : ℕ) → n ≤ suc n
+≤-suc n rewrite
+    sym (+-identityʳ n)
+  | sym (+-suc n 0) = +-monoʳ-≤ n 0 1 z≤n
+
+<-trans-revisited : ∀ {m n p : ℕ}
+  → m < n
+  → n < p
+    -----
+  → m < p
+<-trans-revisited {_} {n} m<n n<p =
+                  <-if-≤ (≤-trans (≤-if-< m<n)
+                         (≤-trans (≤-suc n)
+                                  (≤-if-< n<p)))
 ```
 
 
@@ -742,7 +892,12 @@ successor of the sum of two even numbers, which is even.
 Show that the sum of two odd numbers is even.
 
 ```
--- Your code goes here
+o+o≡e : ∀ {m n : ℕ}
+  → odd m
+  → odd n
+    ------------
+  → even (m + n)
+o+o≡e {m} {suc n} om (suc en) rewrite +-suc m n = suc (o+e≡o om en)
 ```
 
 #### Exercise `Bin-predicates` (stretch) {#Bin-predicates}
@@ -794,7 +949,54 @@ and back is the identity:
 properties of `One`.)
 
 ```
--- Your code goes here
+open import plfa.part1.Bin
+
+data One : Bin → Set where
+  1-one :
+      ----------
+      One (⟨⟩ I)
+
+  1-suc : ∀ {b : Bin}
+    → One b
+      -----------
+    → One (inc b)
+
+data Can : Bin → Set where
+  can-0 :
+       ----------
+       Can (⟨⟩ O)
+
+  can-1 : ∀ {b : Bin}
+    → One b
+      -----
+    → Can b
+
+inc-can : ∀ {b : Bin}
+  → Can b
+    -----------
+  → Can (inc b)
+inc-can can-0     = can-1 1-one
+inc-can (can-1 b) = can-1 (1-suc b)
+
+to-can : ∀ (n : ℕ)
+    ----------
+  → Can (to n)
+to-can zero    = can-0
+to-can (suc n) = inc-can (to-can n)
+
+one-id : ∀ {b : Bin}
+  → One b
+    ---------------
+  → to (from b) ≡ b
+one-id 1-one = refl
+one-id (1-suc {b} ob) rewrite inc-suc-law b = cong inc (one-id ob)
+
+can-id : ∀ {b : Bin}
+  → Can b
+    ---------------
+  → to (from b) ≡ b
+can-id can-0      = refl
+can-id (can-1 ob) = one-id ob
 ```
 
 ## Standard library

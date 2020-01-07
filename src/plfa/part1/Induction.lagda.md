@@ -80,7 +80,21 @@ Give an example of an operator that has an identity and is
 associative but is not commutative.
 
 ```
--- Your code goes here
+open import Data.Bool using (Bool; true; false)
+
+_∧_ : Bool → Bool → Bool
+true ∧ true = true
+_    ∧ _    = false
+
+_∨_ : Bool → Bool → Bool
+false ∨ false = false
+_     ∨ _     = true
+
+open import Data.List using (List; _∷_; [])
+
+_++_ : {A : Set} → List A → List A → List A
+[]       ++ ys = ys
+(x ∷ xs) ++ ys = x ∷ (xs ++ ys)
 ```
 
 
@@ -704,7 +718,10 @@ first four days using a finite story of creation, as
 [earlier]({{ site.baseurl }}/Naturals/#finite-creation).
 
 ```
--- Your code goes here
+-- 0 : ℕ
+-- 1 : ℕ     (0 + 0) + 0 ≡ 0 + (0 + 0)
+-- 2 : ℕ     (0 + 0) + 1 ≡ 0 + (0 + 1)    ...     (1 + 1) + 1 ≡ 1 + (1 + 1)
+-- 3 : ℕ     (0 + 0) + 1 ≡ 0 + (0 + 2)    ...     (2 + 2) + 2 ≡ 2 + (2 + 2)
 ```
 
 ## Associativity with rewrite
@@ -870,7 +887,23 @@ just apply the previous results which show addition
 is associative and commutative.
 
 ```
--- Your code goes here
++-swap : ∀ (m n p : ℕ) → m + (n + p) ≡ n + (m + p)
++-swap m n p =
+  begin
+    m + (n + p)
+  ≡⟨  sym (+-assoc m n p) ⟩
+    (m + n) + p
+  ≡⟨  cong (_+ p) (+-comm m n) ⟩
+    (n + m) + p
+  ≡⟨ +-assoc n m p ⟩
+    n + (m + p)
+  ∎
+
++-swap′ : ∀ (m n p : ℕ) → m + (n + p) ≡ n + (m + p)
++-swap′ m n p rewrite
+    sym (+-assoc m n p)
+  | +-comm m n
+  | +-assoc n m p = refl
 ```
 
 
@@ -883,7 +916,30 @@ Show multiplication distributes over addition, that is,
 for all naturals `m`, `n`, and `p`.
 
 ```
--- Your code goes here
+*-distrib-+ : ∀ (m n p) → (m + n) * p ≡ m * p + n * p
+*-distrib-+ zero n p = refl
+*-distrib-+ (suc m) n p =
+  begin
+    (suc m + n) * p
+  ≡⟨⟩
+    suc (m + n) * p
+  ≡⟨⟩
+    p + (m + n) * p
+  ≡⟨ cong (p +_) (*-distrib-+ m n p) ⟩
+    p + (m * p + n * p)
+  ≡⟨ sym (+-assoc p (m * p) (n * p)) ⟩
+    p + m * p + n * p
+  ≡⟨⟩
+    (suc m) * p + n * p
+  ∎
+
+*-distrib-+′ : ∀ (m n p) → (m + n) * p ≡ m * p + n * p
+*-distrib-+′ zero n p = refl
+*-distrib-+′ (suc m) n p rewrite
+    *-distrib-+′ m n p
+  | sym (+-assoc p (m * p) (n * p)) = refl
+-- p + (m + n) * p ≡ p + m * p + n * p
+-- p + (m * p + n * p) ≡ p + m * p + n * p
 ```
 
 
@@ -896,7 +952,26 @@ Show multiplication is associative, that is,
 for all naturals `m`, `n`, and `p`.
 
 ```
--- Your code goes here
+*-assoc : ∀ (m n p) → (m * n) * p ≡ m * (n * p)
+*-assoc zero n p = refl
+*-assoc (suc m) n p =
+  begin
+    (suc m * n) * p
+  ≡⟨⟩
+    (n + m * n) * p
+  ≡⟨ *-distrib-+ n (m * n) p ⟩
+    n * p + (m * n) * p
+  ≡⟨ cong (n * p +_) (*-assoc m n p) ⟩
+    n * p + m * (n * p)
+  ≡⟨⟩
+    suc m * (n * p)
+  ∎
+
+*-assoc′ : ∀ (m n p) → (m * n) * p ≡ m * (n * p)
+*-assoc′ zero n p = refl
+*-assoc′ (suc m) n p rewrite
+    *-distrib-+ n (m * n) p
+  | *-assoc′ m n p = refl
 ```
 
 
@@ -910,7 +985,45 @@ for all naturals `m` and `n`.  As with commutativity of addition,
 you will need to formulate and prove suitable lemmas.
 
 ```
--- Your code goes here
+n*0≡0 : ∀ (m : ℕ) → m * zero ≡ zero
+n*0≡0 zero = refl
+n*0≡0 (suc m) rewrite n*0≡0 m = refl
+{-
+  begin
+    suc m * zero
+  ≡⟨⟩
+    zero + m * zero
+  ≡⟨ cong (zero +_) (n*0≡0 m) ⟩
+    zero
+  ∎
+-}
+
+*-suc : ∀ m n → m * (suc n) ≡ m * n + m
+*-suc zero n = refl
+*-suc (suc m) n rewrite
+    *-suc m n
+  | sym (+-assoc (suc n) (m * n) m)
+  | sym (+-suc (suc m * n) m) = refl
+{-
+  begin
+    suc m * suc n
+  ≡⟨⟩
+    suc n + m * suc n
+  ≡⟨ cong ((suc n) +_) (*-suc m n) ⟩
+    suc n + (m * n + m)
+  ≡⟨ sym (+-assoc (suc n) (m * n) m) ⟩
+    suc (suc m * n + m)
+  ≡⟨ sym (+-suc (suc m * n) m) ⟩
+    suc m * n + suc m
+  ∎
+-}
+
+*-comm : ∀ (m n) → m * n ≡ n * m
+*-comm zero n rewrite n*0≡0 n = refl
+*-comm (suc m) n rewrite
+    *-suc n m
+  | *-comm n m
+  | +-comm (m * n) n = refl
 ```
 
 
@@ -923,7 +1036,9 @@ Show
 for all naturals `n`. Did your proof require induction?
 
 ```
--- Your code goes here
+0∸n≡0 : ∀ n → zero ∸ n ≡ zero
+0∸n≡0 zero = refl
+0∸n≡0 (suc n) = refl
 ```
 
 
@@ -936,7 +1051,14 @@ Show that monus associates with addition, that is,
 for all naturals `m`, `n`, and `p`.
 
 ```
--- Your code goes here
+∸-+-assoc : ∀ m n p → m ∸ n ∸ p ≡ m ∸ (n + p)
+∸-+-assoc zero n p rewrite
+    0∸n≡0 (n + p)
+  | 0∸n≡0 n
+  | 0∸n≡0 p = refl
+∸-+-assoc (suc m) zero p = refl
+∸-+-assoc (suc m) (suc n) p rewrite
+  ∸-+-assoc m n p = refl
 ```
 
 
@@ -949,6 +1071,38 @@ Show the following three laws
     m ^ (n * p) ≡ (m ^ n) ^ p
 
 for all `m`, `n`, and `p`.
+
+```
+_^_ : ℕ → ℕ → ℕ
+m ^ zero  = 1
+m ^ suc n = m * (m ^ n)
+
+infixl 8 _^_
+
+^-law-1 : ∀ m n p → m ^ (n + p) ≡ (m ^ n) * (m ^ p)
+^-law-1 m zero p rewrite +-identityʳ (m ^ p) = refl
+^-law-1 m (suc n) p rewrite
+    ^-law-1 m n p
+  | *-assoc m (m ^ n) (m ^ p) = refl
+
+^-law-2 : ∀ m n p → (m * n) ^ p ≡ (m ^ p) * (n ^ p)
+^-law-2 m n zero = refl
+^-law-2 m n (suc p) rewrite
+    ^-law-2 m n p
+  | sym (*-assoc (m * (m ^ p)) n (n ^ p))
+  | *-assoc m (m ^ p) n
+  | *-comm (m ^ p) n
+  | sym (*-assoc m n (m ^ p))
+  | *-assoc (m * n) (m ^ p) (n ^ p) = refl
+
+^-law-3 : ∀ m n p → m ^ (n * p) ≡ (m ^ n) ^ p
+^-law-3 m n zero rewrite n*0≡0 n = refl
+^-law-3 m n (suc p) rewrite
+    *-suc n p
+  | +-comm (n * p) n
+  | ^-law-1 m n (n * p)
+  | ^-law-3 m n p = refl
+```
 
 
 #### Exercise `Bin-laws` (stretch) {#Bin-laws}
@@ -972,7 +1126,41 @@ over bitstrings:
 For each law: if it holds, prove; if not, give a counterexample.
 
 ```
--- Your code goes here
+data Bin : Set where
+  ⟨⟩ : Bin
+  _O : Bin → Bin
+  _I : Bin → Bin
+
+inc : Bin → Bin
+inc ⟨⟩    = ⟨⟩ I
+inc (b O) = b I
+inc (b I) = (inc b) O
+
+to : ℕ → Bin
+to zero = ⟨⟩ O
+to (suc n) = inc (to n)
+
+from : Bin → ℕ
+from ⟨⟩ = 0
+from (b O) = 2 * from b
+from (b I) = suc (2 * from b)
+
+inc-suc-law : ∀ b → from (inc b) ≡ suc (from b)
+inc-suc-law ⟨⟩ = refl
+inc-suc-law (b O) = refl
+inc-suc-law (b I) rewrite
+    inc-suc-law b
+  | +-suc (suc (from b)) ((from b) + 0) = refl
+
+-- a counterexample
+_ : to (from (⟨⟩ O I)) ≡ ⟨⟩ I
+_ = refl
+
+from-to-identity : ∀ n → from (to n) ≡ n
+from-to-identity zero = refl
+from-to-identity (suc n) rewrite
+    inc-suc-law (to n)
+  | from-to-identity n = refl
 ```
 
 
