@@ -247,18 +247,10 @@ infix 3 _≤₁_
 -- a preorder example
 data _≤₁_ : ℕ × ℕ → ℕ × ℕ → Set where
 
-  z≤₁s-L : ∀ {m n p : ℕ}
-      ---------------------
-    → (zero , m) ≤₁ (n , p)
-
-  z≤₁s-R : ∀ {m n p : ℕ}
-      ---------------------
-    → (m , zero) ≤₁ (n , p)
-  
-  s≤₁s : ∀ {m n p q : ℕ}
+  ≤₁-cons : ∀ {m n p q : ℕ}
+    → m + n ≤ p + q
+      --------------------------
     → (m , n) ≤₁ (p , q)
-      ----------------------------------
-    → (suc m , suc n) ≤₁ (suc p , suc q)
 ```
 
 Give an example of a partial order that is not a total order.
