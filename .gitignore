@@ -2,6 +2,7 @@
 *.agdai
 .agda-stdlib.sed
 .links-*.sed
+*.agda~
 
 ## Jekyll files
 _site/

@@ -7,7 +7,7 @@ next      : /Isomorphism/
 ---
 
 ```
-module plfa.part1.Equality where
+module plfa.part1.Equality1 where
 ```
 
 Much of our reasoning has involved equality.  Given two terms `M`
@@ -61,6 +61,7 @@ sym : ∀ {A : Set} {x y : A}
     -----
   → y ≡ x
 sym refl = refl
+
 ```
 How does this proof work? The argument to `sym` has type `x ≡ y`, but
 on the left-hand side of the equation the argument has been
@@ -417,7 +418,7 @@ module ≤-Reasoning where
   _≤-∎ : ∀ (x : ℕ)
       -----
     → x ≤ x
-  x ≤-∎  =  ≤-refl
+  x ≤-∎ = ≤-refl
 
 open ≤-Reasoning
 
